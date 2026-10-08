@@ -62,11 +62,11 @@ Visiting a large museum usually breaks down into two bad experiences: wandering 
 ## iPhone Duo Dual-Screen Design Target
 Under the Apple iPhone Duo focus, Exhibit Trail is designed around the future dual-screen phone experience:
 - When unfolded, the persistent visual floor-plan canvas lives on one display while the active shortlist queue, pacing countdown, and note-taking deck occupy the second display.
-- Current Implementation: In the current single-screen iPhone build, this architecture is isolated behind a single clean abstraction seam: the `ExhibitWorkspaceLayout` view container.
+- Planned seam: Issue #6 introduces `ExhibitWorkspaceLayout`. The current skeleton uses one ordinary SwiftUI view; no dual-screen behavior exists.
 - No fold SDK dependency: The app relies exclusively on standard SwiftUI presentation primitives today and does not import or depend on unavailable foldable SDK APIs.
 
 ## Current Status and Milestones
-- **Status:** Documentation-only scaffold. No Xcode project, app code, tests, icon, release Action, archive or TestFlight build exists yet. Features below describe intended behavior, not available functionality. Backlog defines implementation gates.
+- **Status:** M1 skeleton landed. The repo now carries `ExhibitTrail.xcodeproj`, the pure-Swift `Packages/ExhibitTrailKit` package, a minimal SwiftUI shell, and CI enforcing the toolchain pin, iPhone-only device family, zero-network and native-only contracts. No persistence, map canvas, pacing, journal, export, icon or release Action exists yet — those are issues #2–#7. Features below describe intended behavior, not available functionality.
 - **M1 (Project Skeleton & CI):** Native Swift package / Xcode project structure, Swift 6 compiler flags, zero-network CI contract gate, and iPhone-only device enforcement.
 - **M2 (Domain & Storage):** `ExhibitTrailKit` pure-Swift domain layer and SQLite / GRDB persistent store for visits, floor plans, pins, and pacing math.
 - **M3 (Floor Plan Canvas & Pinning):** Zoomable floor plan renderer, coordinate-mapped pin placement, and shortlist prioritization.
@@ -76,7 +76,22 @@ Under the Apple iPhone Duo focus, Exhibit Trail is designed around the future du
 - **M7 (Packaging & App Store Connect):** App Store listing copy review, real generated icon at `AppStore/icon.png`, and automated TestFlight release workflow.
 
 ## Development Quickstart
-This repository currently contains planning files only. After issue #1 lands, clone with `gh repo clone rwrife/exhibit-trail`, open the generated Xcode project on a Mac with Xcode 26.0.1 (17A400), and run the documented iPhone simulator scheme. `toolchain.json` states the target; it does not install Xcode. No build command works yet.
+Clone with `gh repo clone rwrife/exhibit-trail`. On a Mac with Xcode 26.0.1 (17A400), open `ExhibitTrail.xcodeproj` and run the `ExhibitTrail` scheme on an iPhone simulator.
+
+```sh
+swift test --package-path Packages/ExhibitTrailKit
+python3 scripts/check_contract.py
+bash scripts/check_zero_network.sh
+bash scripts/check_native_only.sh
+# Apple toolchain only; unsigned simulator build, not an archive or UI run:
+xcodebuild -project ExhibitTrail.xcodeproj -scheme ExhibitTrail \
+  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  -configuration Release CODE_SIGNING_ALLOWED=NO \
+  -derivedDataPath DerivedData build
+python3 scripts/check_contract.py DerivedData/Build/Products/Release-iphonesimulator/ExhibitTrail.app
+```
+
+Linux can run package tests in `swift:6.2-noble` with `swift test --scratch-path /tmp/exhibit-build --package-path /src/Packages/ExhibitTrailKit`; it cannot build SwiftUI or validate the simulator app. CI tests the package on Linux and the exact Apple toolchain, builds the iPhone simulator app, then measures its Info.plist and linked frameworks. No launch/UI test, archive, signing or TestFlight evidence is claimed by this bootstrap. The icon is intentionally absent until issue #7 supplies real generated artwork; no placeholder is shipped.
 
 ## iOS Signing and TestFlight Release Plan
 Packaging issue #7 must implement `.github/workflows/release.yml`, porting the proven template from `rwrife/cook-console` (also verified in `rwrife/rise-log`, `rwrife/split-slip`, and `rwrife/catch-tally`).

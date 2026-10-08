@@ -14,3 +14,7 @@ coverage/
 *.sqlite-shm
 *.sqlite-wal
 .env
+*.p8
+*.p12
+*.mobileprovision
+*.cer
