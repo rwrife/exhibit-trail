@@ -1,0 +1,20 @@
+Exhibit Trail — A calmer museum visit
+
+PLANNED LISTING DRAFT — not a released app. Review against implemented features before publishing.
+
+Bring your own floor plan. Choose what you want to see. Keep your impressions private.
+
+Exhibit Trail is being developed as an offline iPhone companion for museum and gallery visitors with limited time. The planned workflow lets you import a map photo or PDF page, pin a personal shortlist, choose an order, and keep the next exhibit close at hand.
+
+Planned features:
+• Mark stops as must-see, interested, or bonus.
+• Pace a visit against your own departure target and estimated room-transition buffer.
+• Check exhibits off with undo and record your impressions.
+• Attach photos you select, without library-wide access.
+• Export CSV summaries and versioned JSON backups with chosen attachments.
+
+Your visit data is intended to stay on your iPhone. No accounts, cloud sync, advertising, indoor beacons, or location tracking are planned.
+
+The pacing display is an estimate based on your inputs, not navigation, confirmed opening hours, or a guarantee that you will reach every exhibit. Use floor plans you have permission to import and share.
+
+Standard native iPhone app planned. Native iPad support is disabled. Dual-screen presentation is a future design target, not an available feature.

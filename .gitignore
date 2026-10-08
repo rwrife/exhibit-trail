@@ -1,0 +1,16 @@
+# Xcode, SwiftPM and generated state
+.DS_Store
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xcresult
+*.ipa
+*.xcarchive
+coverage/
+*.profraw
+*.profdata
+*.sqlite-shm
+*.sqlite-wal
+.env
