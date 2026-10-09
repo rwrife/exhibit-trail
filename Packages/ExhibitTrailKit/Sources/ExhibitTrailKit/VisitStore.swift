@@ -271,7 +271,18 @@ public actor VisitStore {
         for component in url.pathComponents.dropFirst() {
             current.appendPathComponent(component)
             if let attributes = try? FileManager.default.attributesOfItem(atPath: current.path),
-               attributes[.type] as? FileAttributeType == .typeSymbolicLink { throw StorageError.unsafePath }
+               attributes[.type] as? FileAttributeType == .typeSymbolicLink {
+                #if os(macOS) || os(iOS)
+                // Foundation collapses /private/var to /var even after resolving symlinks.
+                // Only this OS-owned root alias is accepted; user/asset links remain rejected.
+                guard current.path == "/var" else { throw StorageError.unsafePath }
+                let target = try FileManager.default.destinationOfSymbolicLink(atPath: current.path)
+                guard target == "private/var" || target == "/private/var" else { throw StorageError.unsafePath }
+                current = URL(fileURLWithPath: "/private/var", isDirectory: true)
+                #else
+                throw StorageError.unsafePath
+                #endif
+            }
         }
     }
 }
