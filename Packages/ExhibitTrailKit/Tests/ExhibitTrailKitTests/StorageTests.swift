@@ -6,7 +6,42 @@ import GRDB
 private func directory() throws -> URL {
     let url = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
+    // Diagnose the Apple CI entry failure without normalizing paths passed to the store.
+    do {
+        try VisitStore.safe(url)
+    } catch {
+        recordSafeBoundaryFailure(url, phase: "created-test-root")
+        // Probe only the trusted fixture root; continue to fail on the original URL.
+        let resolved = url.resolvingSymlinksInPath()
+        let resolvedIsSafe = (try? VisitStore.safe(resolved)) != nil
+        Issue.record("safe boundary phase=post-create-resolution accepted=\(resolvedIsSafe)")
+        if !resolvedIsSafe { recordSafeBoundaryFailure(resolved, phase: "post-create-resolution") }
+        try? FileManager.default.removeItem(at: url)
+        throw error
+    }
     return url
+}
+private func recordSafeBoundaryFailure(_ url: URL, phase: String) {
+    // Never include component names, full URLs, or Foundation error descriptions.
+    let hostAllowed = url.host == nil || url.host == "" || url.host == "localhost"
+    let components = url.pathComponents
+    var current = URL(fileURLWithPath: "/", isDirectory: true)
+    var types: [String] = []
+    for (index, component) in components.dropFirst().enumerated() {
+        current.appendPathComponent(component)
+        let attributes = try? FileManager.default.attributesOfItem(atPath: current.path)
+        let type = attributes?[.type] as? FileAttributeType
+        let label: String
+        switch type {
+        case .typeSymbolicLink: label = "symlink"
+        case .typeDirectory: label = "directory"
+        case .typeRegular: label = "regular"
+        case nil: label = "unavailable"
+        default: label = "other"
+        }
+        types.append("\(index + 1):\(label)")
+    }
+    Issue.record("safe boundary phase=\(phase) fileURL=\(url.isFileURL) hostAllowed=\(hostAllowed) dot=\(components.contains(".")) dotDot=\(components.contains("..")) nul=\(url.path.contains("\0")) components=[\(types.joined(separator: ","))]")
 }
 private func source(_ directory: URL, _ data: Data = Data([137,80,78,71,13,10,26,10,1,2,3])) throws -> URL {
     let url = directory.appendingPathComponent(UUID().uuidString)
