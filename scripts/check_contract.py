@@ -26,6 +26,16 @@ assert re.findall(r"IPHONEOS_DEPLOYMENT_TARGET = ([^;]+);", project) == ["26.0"]
 assert re.findall(r"PRODUCT_BUNDLE_IDENTIFIER = ([^;]+);", project) == [pin["bundle_identifier"]] * 2
 assert "XCLocalSwiftPackageReference" in project
 assert "relativePath = Packages/ExhibitTrailKit;" in project
+package = (root / "Packages/ExhibitTrailKit/Package.swift").read_text()
+assert '.package(url: "https://github.com/groue/GRDB.swift.git", exact: "7.11.1")' in package
+assert 'resources: [.copy("Fixtures/v1.sqlite")]' in package
+expected_pin = {"identity": "grdb.swift", "kind": "remoteSourceControl",
+                "location": "https://github.com/groue/GRDB.swift.git",
+                "state": {"revision": "b83108d10f42680d78f23fe4d4d80fc88dab3212", "version": "7.11.1"}}
+for lock in ("Packages/ExhibitTrailKit/Package.resolved",
+             "ExhibitTrail.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"):
+    assert json.loads((root / lock).read_text())["pins"] == [expected_pin], lock
+assert (root / "Packages/ExhibitTrailKit/Tests/ExhibitTrailKitTests/Fixtures/v1.sqlite").is_file()
 assert not list(root.rglob("*.entitlements")), "No capabilities authorized at bootstrap"
 privacy = plistlib.loads((root / "ExhibitTrail/PrivacyInfo.xcprivacy").read_bytes())
 assert privacy["NSPrivacyTracking"] is False
@@ -44,4 +54,4 @@ if len(sys.argv) == 2:
     print("Built app UIDeviceFamily == [1], bundle ID, minimum OS, permissions and privacy: PASS")
 else:
     assert len(sys.argv) == 1, "Usage: check_contract.py [built.app]"
-print("Source contract (pin, 4 iPhone/Swift 6 configurations, bundle ID, project IDs): PASS")
+print("Source contract (pin, 4 iPhone/Swift 6 configurations, bundle ID, project IDs, GRDB locks): PASS")

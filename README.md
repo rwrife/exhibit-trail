@@ -3,7 +3,7 @@
 Offline iPhone museum companion: pin a shortlist onto your own floor plan, pace a time-limited visit, and keep exhibit notes without accounts or location tracking.
 
 ## Overview and Pitch
-Exhibit Trail is an offline, local-first iPhone companion for museum and gallery visitors who want to see their priority works without museum fatigue, crowd panic, or invasive venue apps. It turns any user-provided floor-plan photo or brochure PDF into a visual exhibit canvas, anchors a bounded priority shortlist, and computes an honest pacing budget against your available time—entirely on-device with zero network access and no background location tracking.
+Exhibit Trail is an offline, local-first iPhone companion for museum and gallery visitors who want to see their priority works without museum fatigue, crowd panic, or invasive venue apps. It turns any user-provided floor-plan photo or brochure PDF into a visual exhibit canvas, anchors a bounded priority shortlist, and computes an honest pacing budget against your available time—entirely on-device with zero runtime network access and no background location tracking.
 
 ## Motivation
 Visiting a large museum usually breaks down into two bad experiences: wandering aimlessly until closing time cuts off the two things you came to see, or installing a proprietary venue app that demands an account, pushes Bluetooth beacons, tracks indoor location, and relies on flaky venue Wi-Fi. Exhibit Trail solves this by letting the visitor own the map, the shortlist, and the clock. You snap a picture of the paper museum guide or load an official PDF map, drop pins for your must-see exhibits, set your available visit duration, and follow a clear, glanceable trail.
@@ -49,8 +49,8 @@ Visiting a large museum usually breaks down into two bad experiences: wandering 
 ## Privacy, Permissions, and Data-Storage Behavior
 - **Zero Network:** All data remains strictly on your iPhone. There are no remote servers, analytics beacons, or advertising frameworks.
 - **Minimal Permissions:** Only standard system photo-picker / document-picker access is used to import floor plans and attach user-chosen photos. No background location or CoreLocation usage.
-- **Local Storage:** SQLite backed by GRDB stores visits, maps, pins, and notes on-device in the app's sandboxed document container.
-- **Export & Backup:** Complete user data can be exported as standard JSON or CSV files through the iOS share sheet at any time.
+- **Local Storage:** SQLite backed by GRDB stores visits, maps, pins, and notes on-device in the app's sandboxed application-support directory.
+- **Export & Backup:** JSON/CSV export through the iOS share sheet is planned for issue #6.
 
 ## Platform and Toolchain Policy
 - Target platform: Native Swift (SwiftUI / UIKit) iPhone-only iOS app.
@@ -66,9 +66,9 @@ Under the Apple iPhone Duo focus, Exhibit Trail is designed around the future du
 - No fold SDK dependency: The app relies exclusively on standard SwiftUI presentation primitives today and does not import or depend on unavailable foldable SDK APIs.
 
 ## Current Status and Milestones
-- **Status:** M1 skeleton landed. The repo now carries `ExhibitTrail.xcodeproj`, the pure-Swift `Packages/ExhibitTrailKit` package, a minimal SwiftUI shell, and CI enforcing the toolchain pin, iPhone-only device family, zero-network and native-only contracts. No persistence, map canvas, pacing, journal, export, icon or release Action exists yet — those are issues #2–#7. Features below describe intended behavior, not available functionality.
+- **Status:** M1 skeleton landed. The repo now carries `ExhibitTrail.xcodeproj`, the pure-Swift `Packages/ExhibitTrailKit` package, a minimal SwiftUI shell, and CI enforcing the toolchain pin, iPhone-only device family, zero-network and native-only contracts. M2 now provides versioned GRDB local storage and bounded asset copying, initialized by the app. The shell has no editing/import controls yet; map canvas, pacing, journal UI, export, icon and release Action remain issues #3–#7. Features below describe intended behavior, not available functionality.
 - **M1 (Project Skeleton & CI):** Native Swift package / Xcode project structure, Swift 6 compiler flags, zero-network CI contract gate, and iPhone-only device enforcement.
-- **M2 (Domain & Storage):** `ExhibitTrailKit` pure-Swift domain layer and SQLite / GRDB persistent store for visits, floor plans, pins, and pacing math.
+- **M2 (Domain & Storage):** `ExhibitTrailKit` visit/ordered-stop models and versioned GRDB storage for normalized pins, notes and owned PDF/PNG/JPEG attachments. Pacing math remains M4.
 - **M3 (Floor Plan Canvas & Pinning):** Zoomable floor plan renderer, coordinate-mapped pin placement, and shortlist prioritization.
 - **M4 (Visit Pacing Engine):** Monotonic pacing timer, remaining-time calculation, room transition buffers, and visit progress tracking.
 - **M5 (Exhibit Journal & Local Attachments):** Impression notes, local image attachments, and unviewed/viewed toggle states.
@@ -91,7 +91,7 @@ xcodebuild -project ExhibitTrail.xcodeproj -scheme ExhibitTrail \
 python3 scripts/check_contract.py DerivedData/Build/Products/Release-iphonesimulator/ExhibitTrail.app
 ```
 
-Linux can run package tests in `swift:6.2-noble` with `swift test --scratch-path /tmp/exhibit-build --package-path /src/Packages/ExhibitTrailKit`; it cannot build SwiftUI or validate the simulator app. CI tests the package on Linux and the exact Apple toolchain, builds the iPhone simulator app, then measures its Info.plist and linked frameworks. No launch/UI test, archive, signing or TestFlight evidence is claimed by this bootstrap. The icon is intentionally absent until issue #7 supplies real generated artwork; no placeholder is shipped.
+Linux requires `apt-get update && apt-get install -y libsqlite3-dev` in `swift:6.2-noble` before running `swift test --scratch-path /tmp/exhibit-build --package-path /src/Packages/ExhibitTrailKit`; it cannot build SwiftUI or validate the simulator app. CI tests the package on Linux and the exact Apple toolchain, builds the iPhone simulator app, then measures its Info.plist and linked frameworks. No launch/UI test, archive, signing or TestFlight evidence is claimed by this bootstrap. The icon is intentionally absent until issue #7 supplies real generated artwork; no placeholder is shipped.
 
 ## iOS Signing and TestFlight Release Plan
 Packaging issue #7 must implement `.github/workflows/release.yml`, porting the proven template from `rwrife/cook-console` (also verified in `rwrife/rise-log`, `rwrife/split-slip`, and `rwrife/catch-tally`).
@@ -100,3 +100,9 @@ Packaging issue #7 must implement `.github/workflows/release.yml`, porting the p
 - Configures credentials securely using GitHub Actions repository secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, and `ASC_TEAM_ID`.
 - Exports signed IPA archive with `TARGETED_DEVICE_FAMILY = 1` and uploads to TestFlight using the official App Store Connect API.
 - Generates a matching GitHub release with build artifacts.
+
+Storage uses one `VisitStore` actor per app-support directory. Canonical lowercase UUIDs identify visits, stops and attachments. Array order is explicit and independent of priority. Missing completion evidence remains `unknown`; a missing owned file throws `missingAttachment` without changing a stop. Migration v1 stores visits/stops; v2 adds unknown-safe notes/completion and attachments.
+
+Selected local regular files are streamed in 64 KiB chunks, capped at 20 MiB, checked for PDF/PNG/JPEG magic, and copied to generated immutable sandbox filenames. The signatures identify types; decoding/rendering belongs to the canvas issue. Optional dimensions must be finite and positive, at most 100,000. Traversal and symlink paths are rejected. Provider grants and source paths are never persisted. Attachment replacements commit a new file reference transactionally before retiring the old file. Deletion queues durable file cleanup in the same DB transaction; cleanup is best effort after commit, with failed deletions retained in the durable queue. Explicit `cleanup()` reports errors and can retry after restart. Mutation methods throw only before commit, preserving the prior state on write failure. Files copied just before a process crash may remain unreferenced; no viewed state is inferred from files or their absence.
+
+GRDB is pinned to 7.11.1 / `b83108d10f42680d78f23fe4d4d80fc88dab3212` in both package and app workspace lockfiles. Its local manifest/changelog review confirms Swift 6.1+ support and system SQLite on Linux, compatible with Swift 6.2 and Xcode 26.0.1. Runtime source gates remain unchanged; dependency retrieval is a build-time operation.

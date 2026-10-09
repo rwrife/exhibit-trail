@@ -1,18 +1,19 @@
 // swift-tools-version:6.0
 import PackageDescription
 
-// Pure-Swift visit domain. No UI, networking or Apple-only frameworks.
-// Visit storage and pacing arrive in issues #2 and #4.
+// Local visit storage. GRDB 7.11.1 requires Swift 6.1+, compatible with the pinned toolchains.
 let package = Package(
     name: "ExhibitTrailKit",
     platforms: [
         .iOS("26.0"),
+        .macOS(.v10_15), // Package tests on the pinned Apple toolchain.
     ],
     products: [
         .library(name: "ExhibitTrailKit", targets: ["ExhibitTrailKit"]),
     ],
+    dependencies: [.package(url: "https://github.com/groue/GRDB.swift.git", exact: "7.11.1")],
     targets: [
-        .target(name: "ExhibitTrailKit"),
-        .testTarget(name: "ExhibitTrailKitTests", dependencies: ["ExhibitTrailKit"]),
+        .target(name: "ExhibitTrailKit", dependencies: [.product(name: "GRDB", package: "GRDB.swift")]),
+        .testTarget(name: "ExhibitTrailKitTests", dependencies: ["ExhibitTrailKit"], resources: [.copy("Fixtures/v1.sqlite")]),
     ]
 )
