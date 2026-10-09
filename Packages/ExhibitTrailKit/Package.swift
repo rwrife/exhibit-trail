@@ -6,7 +6,7 @@ let package = Package(
     name: "ExhibitTrailKit",
     platforms: [
         .iOS("26.0"),
-        .macOS(.v10_15), // Package tests on the pinned Apple toolchain.
+        .macOS(.v11), // FileHandle.read(upToCount:) requires macOS 10.15.4+; CI tests on macos-26.
     ],
     products: [
         .library(name: "ExhibitTrailKit", targets: ["ExhibitTrailKit"]),
