@@ -13,6 +13,7 @@ coverage/
 *.profdata
 *.sqlite-shm
 *.sqlite-wal
+!Packages/ExhibitTrailKit/Tests/ExhibitTrailKitTests/Fixtures/*.sqlite
 .env
 *.p8
 *.p12

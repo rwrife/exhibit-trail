@@ -13,12 +13,16 @@
 # must use explicit file URLs with bounded FileHandle reads (see PLAN.md),
 # never URL(string:).
 #
-# Scanned roots: ExhibitTrail/ (app sources) and Packages/*/Sources/.
+# Scanned roots: ExhibitTrail/ and Packages/*/{Sources,Tests}/.
+# Package manifests and lockfiles describe build-time dependency retrieval.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-ROOTS=("ExhibitTrail" "Packages")
+ROOTS=("ExhibitTrail")
+for root in Packages/*/Sources Packages/*/Tests; do
+  [ -d "$root" ] && ROOTS+=("$root")
+done
 ALLOWLIST=()   # empty by design; extend only with explicit user sign-off
 
 PATTERNS=(

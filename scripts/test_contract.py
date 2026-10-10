@@ -8,7 +8,7 @@ import tempfile
 root = pathlib.Path(__file__).resolve().parent.parent
 with tempfile.TemporaryDirectory(prefix="exhibit-contract-") as temporary:
     copy = pathlib.Path(temporary)
-    for path in ("scripts", "ExhibitTrail", "ExhibitTrail.xcodeproj", "toolchain.json"):
+    for path in ("scripts", "Packages", "ExhibitTrail", "ExhibitTrail.xcodeproj", "toolchain.json"):
         source = root / path
         if source.is_dir():
             shutil.copytree(source, copy / path)
@@ -26,6 +26,26 @@ with tempfile.TemporaryDirectory(prefix="exhibit-contract-") as temporary:
     project.write_text(original.replace("TARGETED_DEVICE_FAMILY = 1;", "TARGETED_DEVICE_FAMILY = 1,2;", 1))
     check("check_contract.py", False)
     project.write_text(original)
+
+    # Entitlements canary: authored entitlements rejected, build directories ignored.
+    for path in ("Unauthorized.entitlements", "ExhibitTrail/Unauthorized.entitlements",
+                 "Packages/ExhibitTrailKit/Sources/ExhibitTrailKit/Unauthorized.entitlements"):
+        entitlement = copy / path
+        entitlement.write_text("<plist></plist>")
+        check("check_contract.py", False)
+        entitlement.unlink()
+    for path in ("DerivedData/Intermediate.entitlements",
+                 "Packages/ExhibitTrailKit/.build/checkouts/Dependency/Fixture.entitlements"):
+        build_entitlement = copy / path
+        build_entitlement.parent.mkdir(parents=True, exist_ok=True)
+        build_entitlement.write_text("<plist></plist>")
+    check("check_contract.py", True)
+    project.write_text(original.replace("CODE_SIGN_STYLE = Automatic;",
+                                       'CODE_SIGN_STYLE = Automatic; CODE_SIGN_ENTITLEMENTS = "DerivedData/Intermediate.entitlements";', 1))
+    check("check_contract.py", False)
+    project.write_text(original)
+    shutil.rmtree(copy / "DerivedData")
+    shutil.rmtree(copy / "Packages/ExhibitTrailKit/.build")
 
     check("check_zero_network.sh", True)
     source = copy / "ExhibitTrail/Forbidden.swift"
@@ -47,6 +67,11 @@ with tempfile.TemporaryDirectory(prefix="exhibit-contract-") as temporary:
         source.write_text("import Foundation\n" + snippet + "\n")
         check("check_zero_network.sh", False)
     source.unlink()
+    package_source = copy / "Packages/ExhibitTrailKit/Sources/ExhibitTrailKit/Forbidden.swift"
+    for snippet in ('let session = URLSession.shared', 'let data = try Data(contentsOf: source)'):
+        package_source.write_text(snippet + "\n")
+        check("check_zero_network.sh", False)
+    package_source.unlink()
 
     check("check_native_only.sh", True)
     for path, content in (
