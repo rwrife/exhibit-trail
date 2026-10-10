@@ -27,6 +27,26 @@ with tempfile.TemporaryDirectory(prefix="exhibit-contract-") as temporary:
     check("check_contract.py", False)
     project.write_text(original)
 
+    # Entitlements canary: authored entitlements rejected, build directories ignored.
+    for path in ("Unauthorized.entitlements", "ExhibitTrail/Unauthorized.entitlements",
+                 "Packages/ExhibitTrailKit/Sources/ExhibitTrailKit/Unauthorized.entitlements"):
+        entitlement = copy / path
+        entitlement.write_text("<plist></plist>")
+        check("check_contract.py", False)
+        entitlement.unlink()
+    for path in ("DerivedData/Intermediate.entitlements",
+                 "Packages/ExhibitTrailKit/.build/checkouts/Dependency/Fixture.entitlements"):
+        build_entitlement = copy / path
+        build_entitlement.parent.mkdir(parents=True, exist_ok=True)
+        build_entitlement.write_text("<plist></plist>")
+    check("check_contract.py", True)
+    project.write_text(original.replace("CODE_SIGN_STYLE = Automatic;",
+                                       'CODE_SIGN_STYLE = Automatic; CODE_SIGN_ENTITLEMENTS = "DerivedData/Intermediate.entitlements";', 1))
+    check("check_contract.py", False)
+    project.write_text(original)
+    shutil.rmtree(copy / "DerivedData")
+    shutil.rmtree(copy / "Packages/ExhibitTrailKit/.build")
+
     check("check_zero_network.sh", True)
     source = copy / "ExhibitTrail/Forbidden.swift"
     for snippet in (

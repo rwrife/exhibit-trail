@@ -36,7 +36,11 @@ for lock in ("Packages/ExhibitTrailKit/Package.resolved",
              "ExhibitTrail.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"):
     assert json.loads((root / lock).read_text())["pins"] == [expected_pin], lock
 assert (root / "Packages/ExhibitTrailKit/Tests/ExhibitTrailKitTests/Fixtures/v1.sqlite").is_file()
-assert not list(root.rglob("*.entitlements")), "No capabilities authorized at bootstrap"
+# Xcode and SwiftPM generate entitlement fixtures outside the authored source tree.
+authored_entitlements = [path for path in root.rglob("*.entitlements")
+                        if not {"DerivedData", ".build", ".git"}.intersection(path.relative_to(root).parts)]
+assert not authored_entitlements, f"No capabilities authorized at bootstrap: {authored_entitlements}"
+assert not re.search(r"\bCODE_SIGN_ENTITLEMENTS\s*=", project), "No signing entitlements authorized"
 privacy = plistlib.loads((root / "ExhibitTrail/PrivacyInfo.xcprivacy").read_bytes())
 assert privacy["NSPrivacyTracking"] is False
 assert privacy["NSPrivacyTrackingDomains"] == privacy["NSPrivacyCollectedDataTypes"] == []
