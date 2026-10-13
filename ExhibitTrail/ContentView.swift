@@ -79,9 +79,31 @@ struct ContentView: View {
                         }
                     }
                     Section("Ordered stops — select, then tap map to position") {
-                        if selectedID != nil {
+                        if let selectedID, let index = visit.stops.firstIndex(where: { $0.id == selectedID }), plan != nil {
+                            Button("Place selected stop at map center") {
+                                self.visit?.stops[index].pin = Pin(x: 0.5, y: 0.5)
+                                save()
+                            }
+                            if visit.stops[index].pin != nil {
+                                Slider(value: Binding(
+                                    get: { self.visit?.stops.first(where: { $0.id == selectedID })?.pin?.x ?? 0.5 },
+                                    set: { value in
+                                        guard let i = self.visit?.stops.firstIndex(where: { $0.id == selectedID }) else { return }
+                                        self.visit?.stops[i].pin?.x = value; save()
+                                    }
+                                ), in: 0...1)
+                                .accessibilityLabel("Horizontal map position")
+                                Slider(value: Binding(
+                                    get: { self.visit?.stops.first(where: { $0.id == selectedID })?.pin?.y ?? 0.5 },
+                                    set: { value in
+                                        guard let i = self.visit?.stops.firstIndex(where: { $0.id == selectedID }) else { return }
+                                        self.visit?.stops[i].pin?.y = value; save()
+                                    }
+                                ), in: 0...1)
+                                .accessibilityLabel("Vertical map position")
+                            }
                             Button("New stop") {
-                                selectedID = nil; name = ""; priority = .interested; nameFocused = false
+                                self.selectedID = nil; name = ""; priority = .interested; nameFocused = false
                             }
                         }
                         TextField("Exhibit name", text: $name).accessibilityIdentifier("stop.name")

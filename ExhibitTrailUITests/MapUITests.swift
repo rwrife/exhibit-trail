@@ -72,9 +72,10 @@ final class MapUITests: XCTestCase {
         let pinnedRow = app.buttons.matching(NSPredicate(format: "label CONTAINS 'pinned'")).firstMatch
         XCTAssertTrue(pinnedRow.waitForExistence(timeout: 5), "Row reflects pinned state")
 
-        // 6. Tap "New stop" or clear selection to add second stop via list controls.
+        // 6. Add a second stop through the gesture-free list controls, then position it with the
+        // accessible placement controls (canvas taps re-pin the selected stop; both paths are real UX).
         for _ in 0..<3 {
-            if app.buttons["New stop"].exists || app.buttons["Add unpinned stop"].exists { break }
+            if app.buttons["Add unpinned stop"].exists || app.buttons["Save stop"].exists { break }
             app.swipeUp()
         }
         if app.buttons["New stop"].exists {
@@ -97,14 +98,22 @@ final class MapUITests: XCTestCase {
         secondRow.tap()
 
         for _ in 0..<3 {
-            if app.images.firstMatch.isHittable { break }
-            app.swipeDown()
+            if app.buttons["Place selected stop at map center"].exists { break }
+            app.swipeUp()
         }
-        // Top quarter is clipped under navigation chrome on compact iPhone during a List scroll.
-        // Tap a visible empty area distinct from first pin at the centre.
-        planImage.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.65)).tap()
+        let placeButton = app.buttons["Place selected stop at map center"]
+        XCTAssertTrue(placeButton.waitForExistence(timeout: 5), "Accessible placement control exists")
+        placeButton.tap()
         let pin2 = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Pin 2'")).firstMatch
-        XCTAssertTrue(pin2.waitForExistence(timeout: 5), "Pin 2 placed via direct tap")
+        XCTAssertTrue(pin2.waitForExistence(timeout: 5), "Second stop pinned via accessible control")
+
+        // Move pin 2 off the centre so both pins are distinct; proves coordinate editing persists.
+        let xSlider = app.sliders["Horizontal map position"]
+        XCTAssertTrue(xSlider.waitForExistence(timeout: 5), "Accessible horizontal coordinate control")
+        xSlider.adjustToPercent(0.25)
+        let ySlider = app.sliders["Vertical map position"]
+        XCTAssertTrue(ySlider.exists, "Accessible vertical coordinate control")
+        ySlider.adjustToPercent(0.25)
 
         // 7. Terminate and relaunch against the same store: pins, plan and order persist.
         let storeID = app.launchEnvironment["EXHIBIT_UI_TEST_STORE"] ?? ""
