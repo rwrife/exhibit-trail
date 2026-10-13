@@ -68,7 +68,47 @@ public actor VisitStore {
                 END;
                 """)
         }
+        migrator.registerMigration("v3-floor-plans") { db in
+            try db.execute(sql: """
+                CREATE TABLE floorPlans (
+                    visitID TEXT PRIMARY KEY NOT NULL REFERENCES visits(id) ON DELETE CASCADE,
+                    attachmentID TEXT NOT NULL UNIQUE REFERENCES attachments(id) ON DELETE CASCADE,
+                    page INTEGER NOT NULL CHECK(typeof(page)='integer' AND page>=0 AND page<100),
+                    width REAL NOT NULL CHECK(typeof(width) IN ('integer','real') AND width>0 AND width<=100000),
+                    height REAL NOT NULL CHECK(typeof(height) IN ('integer','real') AND height>0 AND height<=100000));
+                """)
+        }
         return migrator
+    }
+
+    public func floorPlan(visitID: String) throws -> FloorPlan? {
+        guard validID(visitID) else { throw StorageError.invalidData }
+        return try db.read { db in
+            guard let row = try Row.fetchOne(db, sql: "SELECT * FROM floorPlans WHERE visitID=?", arguments: [visitID]) else { return nil }
+            let plan = FloorPlan(attachmentID: row["attachmentID"], page: row["page"], width: row["width"], height: row["height"])
+            guard validID(plan.attachmentID), (0..<100).contains(plan.page),
+                  plan.width.isFinite, plan.height.isFinite, plan.width > 0, plan.height > 0,
+                  plan.width <= 100_000, plan.height <= 100_000 else { throw StorageError.invalidData }
+            return plan
+        }
+    }
+
+    public func setFloorPlan(_ plan: FloorPlan, visitID: String) throws {
+        guard validID(visitID), validID(plan.attachmentID), (0..<100).contains(plan.page) else { throw StorageError.invalidData }
+        try Self.dimensions(plan.width, plan.height)
+        try db.write { db in
+            guard let row = try Row.fetchOne(db, sql: "SELECT visitID,stopID,type,width,height FROM attachments WHERE id=?", arguments: [plan.attachmentID]),
+                  row["visitID"] as String == visitID, row["stopID"] as String? == nil,
+                  let type = AssetType(rawValue: row["type"]),
+                  type == .pdf || plan.page == 0,
+                  (type == .pdf ||
+                   (row["width"] as Double? == plan.width && row["height"] as Double? == plan.height)) else { throw StorageError.invalidData }
+            try db.execute(sql: """
+                INSERT INTO floorPlans VALUES (?,?,?,?,?) ON CONFLICT(visitID) DO UPDATE SET
+                attachmentID=excluded.attachmentID,page=excluded.page,width=excluded.width,height=excluded.height
+                """, arguments: [visitID, plan.attachmentID, plan.page, plan.width, plan.height])
+            try checkpoint(.databaseWrite)
+        }
     }
 
     public func visits() throws -> [Visit] {

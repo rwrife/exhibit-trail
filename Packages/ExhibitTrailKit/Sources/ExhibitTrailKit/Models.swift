@@ -34,6 +34,24 @@ public struct Visit: Codable, Equatable, Sendable {
         self.id = id; self.title = title; self.createdAt = createdAt; self.stops = stops
     }
 }
+/// Coordinate space is the displayed, orientation-corrected page, independent of view size and zoom.
+public struct FloorPlan: Equatable, Sendable {
+    public let attachmentID: String
+    public let page: Int // Zero-based PDF page; image page is 0.
+    public let width: Double
+    public let height: Double
+    public init(attachmentID: String, page: Int, width: Double, height: Double) {
+        self.attachmentID = attachmentID; self.page = page; self.width = width; self.height = height
+    }
+}
+public enum MapCoordinate {
+    /// Use displayed image bounds, not the surrounding scroll view. Zoom transforms the whole canvas.
+    public static func pin(x: Double, y: Double, width: Double, height: Double) -> Pin? {
+        guard x.isFinite, y.isFinite, width.isFinite, height.isFinite,
+              width > 0, height > 0, (0...width).contains(x), (0...height).contains(y) else { return nil }
+        return Pin(x: x / width, y: y / height)
+    }
+}
 public enum AssetType: String, Sendable { case pdf, png, jpeg }
 public struct Attachment: Equatable, Sendable {
     public let id: String

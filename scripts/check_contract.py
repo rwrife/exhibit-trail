@@ -20,10 +20,14 @@ project = (root / "ExhibitTrail.xcodeproj/project.pbxproj").read_text()
 ids = set(re.findall(r"\b[A-F0-9]{24}\b", project))
 definitions = re.findall(r"^\t\t([A-F0-9]{24})\b[^\n]* = \{", project, re.M)
 assert ids == set(definitions) and len(definitions) == len(ids), "project ID closure"
-assert re.findall(r"TARGETED_DEVICE_FAMILY = ([^;]+);", project) == ["1"] * 4
-assert re.findall(r"SWIFT_VERSION = ([^;]+);", project) == ["6.0"] * 4
-assert re.findall(r"IPHONEOS_DEPLOYMENT_TARGET = ([^;]+);", project) == ["26.0"] * 4
-assert re.findall(r"PRODUCT_BUNDLE_IDENTIFIER = ([^;]+);", project) == [pin["bundle_identifier"]] * 2
+# Six configurations: project, app, and UI-test target (all iPhone-only / Swift 6 / SDK 26).
+assert re.findall(r"TARGETED_DEVICE_FAMILY = ([^;]+);", project) == ["1"] * 6
+assert re.findall(r"SWIFT_VERSION = ([^;]+);", project) == ["6.0"] * 6
+assert re.findall(r"IPHONEOS_DEPLOYMENT_TARGET = ([^;]+);", project) == ["26.0"] * 6
+bundle_ids = re.findall(r"PRODUCT_BUNDLE_IDENTIFIER = ([^;]+);", project)
+assert bundle_ids.count(pin["bundle_identifier"]) == 2, bundle_ids
+assert all(value == pin["bundle_identifier"] or value.startswith(pin["bundle_identifier"] + ".")
+           for value in bundle_ids), bundle_ids
 assert "XCLocalSwiftPackageReference" in project
 assert "relativePath = Packages/ExhibitTrailKit;" in project
 package = (root / "Packages/ExhibitTrailKit/Package.swift").read_text()
@@ -58,4 +62,4 @@ if len(sys.argv) == 2:
     print("Built app UIDeviceFamily == [1], bundle ID, minimum OS, permissions and privacy: PASS")
 else:
     assert len(sys.argv) == 1, "Usage: check_contract.py [built.app]"
-print("Source contract (pin, 4 iPhone/Swift 6 configurations, bundle ID, project IDs, GRDB locks): PASS")
+print("Source contract (pin, 6 iPhone/Swift 6 configurations, bundle ID, project IDs, GRDB locks): PASS")
