@@ -191,7 +191,7 @@ jobs:
           echo "Built binary links no Network/CFNetwork framework: PASS"
 
       - name: iPhone map and stop-list UI journey
-        timeout-minutes: 42
+        timeout-minutes: 55
         run: |
           set -euo pipefail
           # macOS runners do not provide GNU `timeout`; use Perl core alarm.
@@ -220,7 +220,15 @@ jobs:
           }
           trap cleanup EXIT
           bounded 60 xcrun simctl boot "$UDID"
-          bounded 300 xcrun simctl bootstatus "$UDID" -b
+          # First boot after a fresh platform download prepares the device image lazily and can
+          # exceed 5 minutes. Give the first wait a large bound, then one bounded reboot retry;
+          # a second timeout still fails the job (no skipped phases).
+          if ! bounded 600 xcrun simctl bootstatus "$UDID" -b; then
+            echo "::warning::first bootstatus wait failed; one bounded reboot retry"
+            bounded 90 xcrun simctl shutdown "$UDID" || true
+            bounded 60 xcrun simctl boot "$UDID" || true
+            bounded 300 xcrun simctl bootstatus "$UDID" -b
+          fi
           xcodebuild test \
             -project ExhibitTrail.xcodeproj \
             -scheme ExhibitTrail \
