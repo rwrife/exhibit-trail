@@ -79,6 +79,11 @@ struct ContentView: View {
                         }
                     }
                     Section("Ordered stops — select, then tap map to position") {
+                        if selectedID != nil {
+                            Button("New stop") {
+                                selectedID = nil; name = ""; priority = .interested; nameFocused = false
+                            }
+                        }
                         TextField("Exhibit name", text: $name).accessibilityIdentifier("stop.name")
                             .focused($nameFocused)
                         Picker("Priority", selection: $priority) {

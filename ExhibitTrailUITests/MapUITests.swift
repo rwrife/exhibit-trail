@@ -72,12 +72,13 @@ final class MapUITests: XCTestCase {
         let pinnedRow = app.buttons.matching(NSPredicate(format: "label CONTAINS 'pinned'")).firstMatch
         XCTAssertTrue(pinnedRow.waitForExistence(timeout: 5), "Row reflects pinned state")
 
-        // 6. Add a second stop through the gesture-free list controls, select it, then pin it.
-        // A map tap re-pins the currently selected stop, so the new stop must be created and
-        // selected via the accessible list first.
+        // 6. Tap "New stop" or clear selection to add second stop via list controls.
         for _ in 0..<3 {
-            if app.textFields["stop.name"].isHittable { break }
+            if app.buttons["New stop"].exists || app.buttons["Add unpinned stop"].exists { break }
             app.swipeUp()
+        }
+        if app.buttons["New stop"].exists {
+            app.buttons["New stop"].tap()
         }
         let nameField2 = app.textFields["stop.name"]
         XCTAssertTrue(nameField2.waitForExistence(timeout: 5), "Exhibit name field reachable again")
