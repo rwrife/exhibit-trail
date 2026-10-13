@@ -100,7 +100,9 @@ final class MapUITests: XCTestCase {
             if app.images.firstMatch.isHittable { break }
             app.swipeDown()
         }
-        planImage.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.25)).tap()
+        // Top quarter is clipped under navigation chrome on compact iPhone during a List scroll.
+        // Tap a visible empty area distinct from first pin at the centre.
+        planImage.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.65)).tap()
         let pin2 = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Pin 2'")).firstMatch
         XCTAssertTrue(pin2.waitForExistence(timeout: 5), "Pin 2 placed via direct tap")
 
