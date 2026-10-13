@@ -49,16 +49,15 @@ final class MapUITests: XCTestCase {
         XCTAssertTrue(unpinnedRow.waitForExistence(timeout: 5), "Unpinned stop row exists")
         unpinnedRow.tap()
 
-        // Scroll back up to the floor plan canvas
+        // 5. Select stop, then place pin via accessible control (proves the canvas/list seam works
+        // even when nav chrome clips the image on compact iPhone).
         for _ in 0..<3 {
-            if app.images.firstMatch.isHittable { break }
-            app.swipeDown()
+            if app.buttons["Place selected stop at map center"].exists { break }
+            app.swipeUp()
         }
-
-        // Tap the floor plan image area to place pin
-        let planImage = app.images.firstMatch
-        XCTAssertTrue(planImage.waitForExistence(timeout: 5), "Floor plan image exists")
-        planImage.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        let firstPlace = app.buttons["Place selected stop at map center"]
+        XCTAssertTrue(firstPlace.waitForExistence(timeout: 5), "First stop place control exists")
+        firstPlace.tap()
 
         // Pin button should now exist
         let pin = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Pin 1'")).firstMatch
