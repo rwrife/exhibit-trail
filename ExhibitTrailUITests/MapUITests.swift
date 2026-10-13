@@ -72,7 +72,29 @@ final class MapUITests: XCTestCase {
         let pinnedRow = app.buttons.matching(NSPredicate(format: "label CONTAINS 'pinned'")).firstMatch
         XCTAssertTrue(pinnedRow.waitForExistence(timeout: 5), "Row reflects pinned state")
 
-        // Scroll back up to place second stop directly via map tap
+        // 6. Add a second stop through the gesture-free list controls, select it, then pin it.
+        // A map tap re-pins the currently selected stop, so the new stop must be created and
+        // selected via the accessible list first.
+        for _ in 0..<3 {
+            if app.textFields["stop.name"].isHittable { break }
+            app.swipeUp()
+        }
+        let nameField2 = app.textFields["stop.name"]
+        XCTAssertTrue(nameField2.waitForExistence(timeout: 5), "Exhibit name field reachable again")
+        nameField2.tap()
+        nameField2.typeText("Fossil Wall")
+        let addStopButton2 = app.buttons["Add unpinned stop"]
+        XCTAssertTrue(addStopButton2.exists, "Add unpinned stop reachable again")
+        addStopButton2.tap()
+
+        for _ in 0..<3 {
+            if app.buttons.matching(NSPredicate(format: "label CONTAINS 'Fossil Wall, interested, unpinned'")).firstMatch.exists { break }
+            app.swipeUp()
+        }
+        let secondRow = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Fossil Wall, interested, unpinned'")).firstMatch
+        XCTAssertTrue(secondRow.waitForExistence(timeout: 5), "Second stop added without gestures")
+        secondRow.tap()
+
         for _ in 0..<3 {
             if app.images.firstMatch.isHittable { break }
             app.swipeDown()
@@ -80,6 +102,20 @@ final class MapUITests: XCTestCase {
         planImage.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.25)).tap()
         let pin2 = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Pin 2'")).firstMatch
         XCTAssertTrue(pin2.waitForExistence(timeout: 5), "Pin 2 placed via direct tap")
+
+        // 7. Terminate and relaunch against the same store: pins, plan and order persist.
+        let storeID = app.launchEnvironment["EXHIBIT_UI_TEST_STORE"] ?? ""
+        XCTAssertFalse(storeID.isEmpty, "Isolated store id present")
+        app.terminate()
+        app.launch()
+        let planAfterRestart = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Floor plan, page 1'")).firstMatch
+        XCTAssertTrue(planAfterRestart.waitForExistence(timeout: 15), "Floor plan persists across restart")
+        for _ in 0..<3 {
+            if app.buttons.matching(NSPredicate(format: "label CONTAINS 'Fossil Wall, interested, pinned'")).firstMatch.exists { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Fossil Wall, interested, pinned'")).firstMatch.waitForExistence(timeout: 5),
+                      "Second pin persists across restart")
 
         // Scroll to reorder controls
         for _ in 0..<3 {
