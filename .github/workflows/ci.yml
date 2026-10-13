@@ -194,6 +194,12 @@ jobs:
         timeout-minutes: 42
         run: |
           set -euo pipefail
+          # macOS runners do not provide GNU `timeout`; use Perl core alarm.
+          bounded() {
+            local seconds="$1"
+            shift
+            perl -e 'alarm shift; exec @ARGV or die $!' "$seconds" "$@"
+          }
           RUNTIME_ID=com.apple.CoreSimulator.SimRuntime.iOS-26-0
           DEVICE_ID=$(xcrun simctl list runtimes -j | python3 -c '
           import json, sys
@@ -209,12 +215,12 @@ jobs:
           echo "Pinned simulator: $UDID ($RUNTIME_ID, $DEVICE_ID)"
           # Cleanup must never hang and hide the actual test result.
           cleanup() {
-            timeout 30 xcrun simctl shutdown "$UDID" || true
-            timeout 30 xcrun simctl delete "$UDID" || true
+            bounded 30 xcrun simctl shutdown "$UDID" || true
+            bounded 30 xcrun simctl delete "$UDID" || true
           }
           trap cleanup EXIT
-          timeout 60 xcrun simctl boot "$UDID"
-          timeout 300 xcrun simctl bootstatus "$UDID" -b
+          bounded 60 xcrun simctl boot "$UDID"
+          bounded 300 xcrun simctl bootstatus "$UDID" -b
           xcodebuild test \
             -project ExhibitTrail.xcodeproj \
             -scheme ExhibitTrail \
