@@ -109,10 +109,12 @@ final class MapUITests: XCTestCase {
         // Move pin 2 off the centre so both pins are distinct; proves coordinate editing persists.
         let xSlider = app.sliders["Horizontal map position"]
         XCTAssertTrue(xSlider.waitForExistence(timeout: 5), "Accessible horizontal coordinate control")
-        xSlider.adjustToPercent(0.25)
+        xSlider.adjust(toNormalizedSliderPosition: 0.25)
         let ySlider = app.sliders["Vertical map position"]
         XCTAssertTrue(ySlider.exists, "Accessible vertical coordinate control")
-        ySlider.adjustToPercent(0.25)
+        ySlider.adjust(toNormalizedSliderPosition: 0.25)
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Pin 2'")).firstMatch.exists,
+                      "Both pins still present after coordinate edits")
 
         // 7. Terminate and relaunch against the same store: pins, plan and order persist.
         let storeID = app.launchEnvironment["EXHIBIT_UI_TEST_STORE"] ?? ""
