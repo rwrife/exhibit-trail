@@ -43,6 +43,7 @@ jobs:
   ios-build:
     name: iOS build + iPhone-only + toolchain pin
     runs-on: macos-26
+    timeout-minutes: 95
     steps:
       - uses: actions/checkout@v4
         with:
@@ -188,3 +189,63 @@ jobs:
             exit 1
           fi
           echo "Built binary links no Network/CFNetwork framework: PASS"
+
+      - name: iPhone map and stop-list UI journey
+        timeout-minutes: 55
+        run: |
+          set -euo pipefail
+          # macOS runners do not provide GNU `timeout`; use Perl core alarm.
+          bounded() {
+            local seconds="$1"
+            shift
+            perl -e 'alarm shift; exec @ARGV or die $!' "$seconds" "$@"
+          }
+          RUNTIME_ID=com.apple.CoreSimulator.SimRuntime.iOS-26-0
+          DEVICE_ID=$(xcrun simctl list runtimes -j | python3 -c '
+          import json, sys
+          runtime = next((r for r in json.load(sys.stdin)["runtimes"] if r["identifier"] == sys.argv[1]), None)
+          if runtime is None:
+              sys.exit("Pinned runtime missing")
+          iphones = [d for d in runtime["supportedDeviceTypes"] if d["name"].startswith("iPhone") and "SE" not in d["name"]]
+          if not iphones:
+              sys.exit("No iPhone device type in pinned runtime")
+          print(iphones[-1]["identifier"])
+          ' "$RUNTIME_ID")
+          UDID=$(xcrun simctl create exhibit-map-ci "$DEVICE_ID" "$RUNTIME_ID")
+          echo "Pinned simulator: $UDID ($RUNTIME_ID, $DEVICE_ID)"
+          # Cleanup must never hang and hide the actual test result.
+          cleanup() {
+            bounded 30 xcrun simctl shutdown "$UDID" || true
+            bounded 30 xcrun simctl delete "$UDID" || true
+          }
+          trap cleanup EXIT
+          bounded 60 xcrun simctl boot "$UDID"
+          # First boot after a fresh platform download prepares the device image lazily and can
+          # exceed 5 minutes. Give the first wait a large bound, then one bounded reboot retry;
+          # a second timeout still fails the job (no skipped phases).
+          if ! bounded 600 xcrun simctl bootstatus "$UDID" -b; then
+            echo "::warning::first bootstatus wait failed; one bounded reboot retry"
+            bounded 90 xcrun simctl shutdown "$UDID" || true
+            bounded 60 xcrun simctl boot "$UDID" || true
+            bounded 300 xcrun simctl bootstatus "$UDID" -b
+          fi
+          xcodebuild test \
+            -project ExhibitTrail.xcodeproj \
+            -scheme ExhibitTrail \
+            -destination "id=$UDID" \
+            -only-testing:ExhibitTrailUITests \
+            -resultBundlePath UITestResults.xcresult \
+            -derivedDataPath DerivedDataTest \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee ui-tests.log
+
+      - name: Upload UI test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: map-ui-tests-${{ github.run_attempt }}
+          path: |
+            UITestResults.xcresult
+            ui-tests.log
+          if-no-files-found: ignore
+          retention-days: 7

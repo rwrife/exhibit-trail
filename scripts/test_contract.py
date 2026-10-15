@@ -11,7 +11,7 @@ with tempfile.TemporaryDirectory(prefix="exhibit-contract-") as temporary:
     for path in ("scripts", "Packages", "ExhibitTrail", "ExhibitTrail.xcodeproj", "toolchain.json"):
         source = root / path
         if source.is_dir():
-            shutil.copytree(source, copy / path)
+            shutil.copytree(source, copy / path, ignore=shutil.ignore_patterns(".build", "DerivedData"))
         else:
             shutil.copy2(source, copy / path)
 

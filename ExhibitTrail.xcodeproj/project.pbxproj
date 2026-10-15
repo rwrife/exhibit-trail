@@ -8,10 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		AA00000000000000000000B0 /* ExhibitTrailKit in ExhibitTrailKit */ = {isa = PBXBuildFile; productRef = AA00000000000000000000AF /* ExhibitTrailKit */; };
+		AA00000000000000000000C0 /* MapUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000C1 /* MapUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		AA00000000000000000000B1 /* ExhibitTrail.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExhibitTrail.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA00000000000000000000C1 /* MapUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapUITests.swift; sourceTree = "<group>"; };
+		AA00000000000000000000C2 /* ExhibitTrailUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ExhibitTrailUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA00000000000000000000B3 /* toolchain.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = toolchain.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -36,6 +39,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA00000000000000000000C7 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -43,6 +47,7 @@
 			isa = PBXGroup;
 			children = (
 				AA00000000000000000000AC /* ExhibitTrail */,
+				AA00000000000000000000C3 /* ExhibitTrailUITests */,
 				AA00000000000000000000B3 /* toolchain.json */,
 				AA00000000000000000000B2 /* Products */,
 			);
@@ -52,8 +57,17 @@
 			isa = PBXGroup;
 			children = (
 				AA00000000000000000000B1 /* ExhibitTrail.app */,
+				AA00000000000000000000C2 /* ExhibitTrailUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		AA00000000000000000000C3 /* ExhibitTrailUITests */ = {
+			isa = PBXGroup;
+			children = (
+				AA00000000000000000000C1 /* MapUITests.swift */,
+			);
+			path = ExhibitTrailUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -82,7 +96,32 @@
 			productReference = AA00000000000000000000B1 /* ExhibitTrail.app */;
 			productType = "com.apple.product-type.application";
 		};
+		AA00000000000000000000C4 /* ExhibitTrailUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA00000000000000000000C5 /* Build configuration list for PBXNativeTarget "ExhibitTrailUITests" */;
+			buildPhases = (
+				AA00000000000000000000C6 /* Sources */,
+				AA00000000000000000000C7 /* Frameworks */,
+				AA00000000000000000000C8 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = (
+				AA00000000000000000000CB /* PBXTargetDependency */,
+			);
+			name = ExhibitTrailUITests;
+			productName = ExhibitTrailUITests;
+			productReference = AA00000000000000000000C2 /* ExhibitTrailUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXContainerItemProxy section */
+		AA00000000000000000000CA /* PBXContainerItemProxy */ = {isa = PBXContainerItemProxy; containerPortal = AA00000000000000000000A1 /* Project object */; proxyType = 1; remoteGlobalIDString = AA00000000000000000000A2; remoteInfo = ExhibitTrail; };
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		AA00000000000000000000CB /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = AA00000000000000000000A2 /* ExhibitTrail */; targetProxy = AA00000000000000000000CA /* PBXContainerItemProxy */; };
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		AA00000000000000000000A1 /* Project object */ = {
@@ -114,11 +153,13 @@
 			projectRoot = "";
 			targets = (
 				AA00000000000000000000A2 /* ExhibitTrail */,
+				AA00000000000000000000C4 /* ExhibitTrailUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		AA00000000000000000000C8 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		AA00000000000000000000AB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -129,6 +170,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		AA00000000000000000000C6 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (AA00000000000000000000C0 /* MapUITests.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
 		AA00000000000000000000A9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -268,6 +310,32 @@
 			};
 			name = Release;
 		};
+		AA00000000000000000000CC /* UI Tests Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.infinityball.exhibittrail.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = ExhibitTrail;
+		};
+			name = Debug;
+		};
+		AA00000000000000000000CD /* UI Tests Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.infinityball.exhibittrail.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = ExhibitTrail;
+		};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -285,6 +353,15 @@
 			buildConfigurations = (
 				AA00000000000000000000A7 /* Debug */,
 				AA00000000000000000000A8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA00000000000000000000C5 /* Build configuration list for PBXNativeTarget "ExhibitTrailUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA00000000000000000000CC /* UI Tests Debug */,
+				AA00000000000000000000CD /* UI Tests Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
