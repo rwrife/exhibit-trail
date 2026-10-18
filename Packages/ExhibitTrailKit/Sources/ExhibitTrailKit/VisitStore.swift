@@ -78,6 +78,13 @@ public actor VisitStore {
                     height REAL NOT NULL CHECK(typeof(height) IN ('integer','real') AND height>0 AND height<=100000));
                 """)
         }
+        migrator.registerMigration("v4-visit-pacing") { db in
+            try db.execute(sql: """
+                ALTER TABLE visits ADD COLUMN departureAt REAL CHECK(departureAt IS NULL OR (typeof(departureAt) IN ('integer','real') AND abs(departureAt)<=1.7976931348623157e308));
+                ALTER TABLE visits ADD COLUMN minutesPerStop INTEGER NOT NULL DEFAULT 10 CHECK(typeof(minutesPerStop)='integer' AND minutesPerStop BETWEEN 1 AND 240);
+                ALTER TABLE visits ADD COLUMN transitionMinutes INTEGER NOT NULL DEFAULT 5 CHECK(typeof(transitionMinutes)='integer' AND transitionMinutes BETWEEN 0 AND 240);
+                """)
+        }
         return migrator
     }
 
@@ -125,7 +132,9 @@ public actor VisitStore {
                     return Stop(id: row["id"], title: row["title"], priority: priority,
                                 pin: x.map { Pin(x: $0, y: y!) }, note: row["note"], state: state, viewedAt: row["viewedAt"])
                 }
-                let visit = Visit(id: id, title: row["title"], createdAt: row["createdAt"], stops: stops)
+                let visit = Visit(id: id, title: row["title"], createdAt: row["createdAt"], stops: stops,
+                                  departureAt: row["departureAt"], minutesPerStop: row["minutesPerStop"],
+                                  transitionMinutes: row["transitionMinutes"])
                 try validate(visit)
                 return visit
             }
@@ -135,7 +144,11 @@ public actor VisitStore {
     public func save(_ visit: Visit) throws {
         try validate(visit)
         try db.write { db in
-            try db.execute(sql: "INSERT INTO visits VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,createdAt=excluded.createdAt", arguments: [visit.id, visit.title, visit.createdAt])
+            try db.execute(sql: """
+                INSERT INTO visits (id,title,createdAt,departureAt,minutesPerStop,transitionMinutes) VALUES (?,?,?,?,?,?)
+                ON CONFLICT(id) DO UPDATE SET title=excluded.title,createdAt=excluded.createdAt,
+                departureAt=excluded.departureAt,minutesPerStop=excluded.minutesPerStop,transitionMinutes=excluded.transitionMinutes
+                """, arguments: [visit.id, visit.title, visit.createdAt, visit.departureAt, visit.minutesPerStop, visit.transitionMinutes])
             let old = try String.fetchAll(db, sql: "SELECT id FROM stops WHERE visitID=?", arguments: [visit.id])
             for id in old where !visit.stops.contains(where: { $0.id == id }) {
                 try db.execute(sql: "DELETE FROM stops WHERE id=?", arguments: [id])

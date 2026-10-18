@@ -30,8 +30,43 @@ public struct Visit: Codable, Equatable, Sendable {
     public var createdAt: Double
     /// Array position is the persisted order; priority never silently reorders it.
     public var stops: [Stop]
-    public init(id: String = UUID().uuidString.lowercased(), title: String, createdAt: Double = Date().timeIntervalSince1970, stops: [Stop] = []) {
+    /// User-entered wall-clock departure, never inferred venue closing time.
+    public var departureAt: Double?
+    public var minutesPerStop: Int
+    /// User estimate for each unviewed stop, including approach to the first.
+    public var transitionMinutes: Int
+    public init(id: String = UUID().uuidString.lowercased(), title: String, createdAt: Double = Date().timeIntervalSince1970,
+                stops: [Stop] = [], departureAt: Double? = nil, minutesPerStop: Int = 10, transitionMinutes: Int = 5) {
         self.id = id; self.title = title; self.createdAt = createdAt; self.stops = stops
+        self.departureAt = departureAt; self.minutesPerStop = minutesPerStop; self.transitionMinutes = transitionMinutes
+    }
+    private enum CodingKeys: String, CodingKey { case id, title, createdAt, stops, departureAt, minutesPerStop, transitionMinutes }
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(id: try values.decode(String.self, forKey: .id),
+                  title: try values.decode(String.self, forKey: .title),
+                  createdAt: try values.decode(Double.self, forKey: .createdAt),
+                  stops: try values.decode([Stop].self, forKey: .stops),
+                  departureAt: try values.decodeIfPresent(Double.self, forKey: .departureAt),
+                  minutesPerStop: try values.decodeIfPresent(Int.self, forKey: .minutesPerStop) ?? 10,
+                  transitionMinutes: try values.decodeIfPresent(Int.self, forKey: .transitionMinutes) ?? 5)
+    }
+}
+
+/// Pure wall-clock snapshot. Recalculate on each foreground render; no timers or routing claims.
+public struct VisitPace: Equatable, Sendable {
+    public let unviewedCount: Int
+    public let availableSeconds: Double
+    public let estimatedSeconds: Double
+    public let budgetSeconds: Double
+    public var isOverdue: Bool { budgetSeconds < 0 }
+    public static func evaluate(_ visit: Visit, at now: Date) -> VisitPace? {
+        guard let deadline = visit.departureAt, deadline.isFinite else { return nil }
+        let count = visit.stops.filter { $0.state != .viewed }.count
+        let available = deadline - now.timeIntervalSince1970
+        let estimated = Double(count) * Double(visit.minutesPerStop + visit.transitionMinutes) * 60
+        return VisitPace(unviewedCount: count, availableSeconds: available,
+                         estimatedSeconds: estimated, budgetSeconds: available - estimated)
     }
 }
 /// Coordinate space is the displayed, orientation-corrected page, independent of view size and zoom.
@@ -69,6 +104,8 @@ func validID(_ value: String) -> Bool {
 }
 func validate(_ visit: Visit) throws {
     guard validID(visit.id), visit.createdAt.isFinite, visit.stops.count <= 10_000,
+          visit.departureAt?.isFinite != false,
+          (1...240).contains(visit.minutesPerStop), (0...240).contains(visit.transitionMinutes),
           Set(visit.stops.map(\.id)).count == visit.stops.count else { throw StorageError.invalidData }
     for stop in visit.stops {
         guard validID(stop.id), stop.viewedAt?.isFinite != false,
