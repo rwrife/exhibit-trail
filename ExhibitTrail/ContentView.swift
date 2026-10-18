@@ -19,11 +19,44 @@ struct ContentView: View {
     @State private var pageCount = 0
     @FocusState private var nameFocused: Bool
     @State private var saveTask: Task<Void, Never>?
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var paceNow = Date()
 
     var body: some View {
         NavigationStack {
             List {
                 if let visit {
+                    Section("Visit pace — your estimates, not travel times") {
+                        Toggle("Set departure deadline", isOn: Binding(
+                            get: { self.visit?.departureAt != nil },
+                            set: { enabled in
+                                self.visit?.departureAt = enabled ? Date().addingTimeInterval(2 * 3600).timeIntervalSince1970 : nil
+                                paceNow = Date(); save()
+                            }))
+                        if let departure = visit.departureAt {
+                            DatePicker("Departure", selection: Binding(
+                                get: { Date(timeIntervalSince1970: self.visit?.departureAt ?? departure) },
+                                set: { self.visit?.departureAt = $0.timeIntervalSince1970; paceNow = Date(); save() }),
+                                displayedComponents: [.date, .hourAndMinute])
+                            Stepper("Minutes per stop: \(visit.minutesPerStop)", value: Binding(
+                                get: { self.visit?.minutesPerStop ?? 10 },
+                                set: { self.visit?.minutesPerStop = $0; save() }), in: 1...240)
+                            Stepper("Transition buffer per stop: \(visit.transitionMinutes) minutes", value: Binding(
+                                get: { self.visit?.transitionMinutes ?? 5 },
+                                set: { self.visit?.transitionMinutes = $0; save() }), in: 0...240)
+                            if let pace = VisitPace.evaluate(visit, at: paceNow) {
+                                Text("\(pace.unviewedCount) stops left · \(Int(pace.estimatedSeconds / 60)) minutes estimated from your inputs")
+                                    .accessibilityIdentifier("pace.estimate")
+                                Text(pace.isOverdue ? "Overdue by \(Int(ceil(-pace.budgetSeconds / 60))) minutes" :
+                                     "\(Int(floor(pace.budgetSeconds / 60))) minutes spare")
+                                    .font(.headline)
+                                    .foregroundStyle(pace.isOverdue ? Color.red : Color.primary)
+                                    .accessibilityIdentifier("pace.budget")
+                                Text("No inferred transit, venue hours, or route guidance. Updates while app is open.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
                     Section("Floor plan") {
                         if let plan, let image {
                             ScrollView([.horizontal, .vertical]) {
@@ -152,6 +185,14 @@ struct ContentView: View {
                 }
             }
             .task(id: store != nil) { await load() }
+            // Foreground-only pacing: wall-clock sleep, so background resume and user
+            // wall-clock changes recompute on the next tick without timers or alarms.
+            .task(id: scenePhase) {
+                while !Task.isCancelled {
+                    paceNow = Date()
+                    try? await Task.sleep(for: .seconds(30))
+                }
+            }
         }
     }
 

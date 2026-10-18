@@ -9,11 +9,13 @@
 /* Begin PBXBuildFile section */
 		AA00000000000000000000B0 /* ExhibitTrailKit in ExhibitTrailKit */ = {isa = PBXBuildFile; productRef = AA00000000000000000000AF /* ExhibitTrailKit */; };
 		AA00000000000000000000C0 /* MapUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000C1 /* MapUITests.swift */; };
+		AA00000000000000000000D0 /* PaceUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000D1 /* PaceUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		AA00000000000000000000B1 /* ExhibitTrail.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExhibitTrail.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA00000000000000000000C1 /* MapUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapUITests.swift; sourceTree = "<group>"; };
+		AA00000000000000000000D1 /* PaceUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaceUITests.swift; sourceTree = "<group>"; };
 		AA00000000000000000000C2 /* ExhibitTrailUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ExhibitTrailUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA00000000000000000000B3 /* toolchain.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = toolchain.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -66,6 +68,7 @@
 			isa = PBXGroup;
 			children = (
 				AA00000000000000000000C1 /* MapUITests.swift */,
+				AA00000000000000000000D1 /* PaceUITests.swift */,
 			);
 			path = ExhibitTrailUITests;
 			sourceTree = "<group>";
@@ -170,7 +173,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		AA00000000000000000000C6 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (AA00000000000000000000C0 /* MapUITests.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
+		AA00000000000000000000C6 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (AA00000000000000000000C0 /* MapUITests.swift in Sources */,AA00000000000000000000D0 /* PaceUITests.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
 		AA00000000000000000000A9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
